@@ -9,7 +9,6 @@ import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.util.Vector
 
 class HuntingEvent(private val plugin: ChasingtailsImpl) : Listener {
 
@@ -18,25 +17,25 @@ class HuntingEvent(private val plugin: ChasingtailsImpl) : Listener {
         val player = event.player
         val item = event.item ?: return
 
+        // 다이아몬드 우클릭 감지
         if (item.type == Material.DIAMOND && (event.action == Action.RIGHT_CLICK_AIR || event.action == Action.RIGHT_CLICK_BLOCK)) {
-            val gamePlayer = plugin.getGamePlayer(player) ?: return
-            val targetEntry = gamePlayer.target ?: return
-            val targetPlayer = targetEntry.player ?: return
+            val gp = plugin.getGamePlayer(player) ?: return
+            val targetGP = gp.target ?: return
+            val targetPlayer = targetGP.player ?: return
 
-            // 월드가 다를 때 알림
+            // 월드 체크 및 안내
             if (player.world != targetPlayer.world) {
-                player.sendMessage("§e[!] 타겟이 다른 세계(월드)에 있습니다.")
+                player.sendMessage("§e[!] 타겟이 다른 세계에 있습니다.")
                 return
             }
 
-            val startLocation = player.eyeLocation
-            val direction: Vector = targetPlayer.location.toVector().subtract(startLocation.toVector()).normalize()
-            
+            // 타겟 방향으로 연기 소환
+            val dir = targetPlayer.location.toVector().subtract(player.location.toVector()).normalize()
             for (i in 1..3) {
-                val particleLoc = startLocation.clone().add(direction.clone().multiply(i.toDouble()))
-                player.world.spawnParticle(Particle.CLOUD, particleLoc, 5, 0.1, 0.1, 0.1, 0.0)
+                val loc = player.eyeLocation.add(dir.multiply(i.toDouble()))
+                player.world.spawnParticle(Particle.CLOUD, loc, 5, 0.1, 0.1, 0.1, 0.0)
             }
-            player.sendMessage("§b타겟의 방향으로 연기가 피어오릅니다.")
+            player.sendMessage("§b타겟의 방향을 감지했습니다.")
         }
     }
 
@@ -46,18 +45,19 @@ class HuntingEvent(private val plugin: ChasingtailsImpl) : Listener {
         val attacker = event.damager as? Player ?: return
 
         if (victim.health - event.finalDamage <= 0) {
-            val hunter = plugin.getGamePlayer(attacker) ?: return
-            val prey = plugin.getGamePlayer(victim) ?: return
+            val hunterGP = plugin.getGamePlayer(attacker) ?: return
+            val victimGP = plugin.getGamePlayer(victim) ?: return
 
-            if (hunter.target == prey) {
-                event.isCancelled = true 
-                victim.health = 20.0 
-
-                // 팀 포섭 로직
-                prey.color = hunter.color
+            // 타겟 처치 시 팀 포섭 (색상 변경)
+            if (hunterGP.target == victimGP) {
+                event.isCancelled = true
+                victim.health = 20.0
+                
+                // 팀 색상 강제 일치
+                victimGP.color = hunterGP.color
                 
                 victim.sendMessage("§c처치당했습니다! 이제 §f${attacker.name}§c의 팀입니다.")
-                attacker.sendMessage("§a타겟을 우리 팀으로 포섭했습니다!")
+                attacker.sendMessage("§a타겟을 포섭하여 팀이 되었습니다!")
             }
         }
     }
