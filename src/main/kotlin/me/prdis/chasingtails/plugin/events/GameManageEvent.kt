@@ -21,17 +21,15 @@ class GameManageEvent(private val plugin: ChasingtailsImpl) : Listener {
     private fun startTailGame() {
         val players = Bukkit.getOnlinePlayers().toList()
         
-        // 영상 00:00 설명: 빨주노초파보 6가지 색 배정 및 순환 타겟 설정
         for (i in players.indices) {
-            val hunter = plugin.getGamePlayer(players[i])
+            val hunter = plugin.getGamePlayer(players[i]) ?: continue
             val nextIndex = if (i == players.size - 1) 0 else i + 1
-            hunter?.target = plugin.getGamePlayer(players[nextIndex]) // 왼쪽 팀이 타겟
+            hunter.target = plugin.getGamePlayer(players[nextIndex])
 
-            // 랜덤 스폰 (0,0 기준 50~5000)
             val loc = getRandomLoc(players[i])
             players[i].teleport(loc)
         }
-        Bukkit.broadcastMessage("§6[게임 시작] §f타겟을 잡아 노예로 만드세요!")
+        Bukkit.broadcastMessage("§6[게임 시작] §f6명의 꼬리잡기가 시작되었습니다!")
     }
 
     private fun getRandomLoc(player: Player): Location {
